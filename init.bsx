@@ -1,0 +1,166 @@
+' TEAM658 2003 Code - Main control program (slot 1) ... PBasic2.5
+'
+'(C)2003 Dustin Spicuzza, Team658
+'Portions (C)2002 Innovation First
+'
+' Main initialization program (slot0).. 
+
+' {$PBASIC 2.5}
+' {$STAMP BS2SX, user.bsx, joy1.bsx, joy2.bsx, joy3.bsx, joy4.bsx}
+
+
+gear_servo 	VAR byte	'the gears need to be pre-set.. and besides, nothing really here anyways!
+
+'=============================================================================================================
+'========= DEFINE CONSTANTS FOR INITIALIZATION ===============================================================
+'=============================================================================================================
+'  The initialization code is used to select the input data used by PBASIC.
+'  The Master micro-processor (uP) sends the data you select to the BS2SX
+'  PBASIC uP.  You may select up to 26 constants, corresponding
+'  to 26 variables, from the 32 available to you.  Make sure that you have 
+'  variables for all the bytes recieved in the serin command.
+'
+'  The constants below have a "c_" prefix, as compared to the variables that 
+'  they will represent.
+'
+'  Set the Constants below to 1 for each data byte you want to recieve.
+'  Set the Constants below to 0 for the unneeded data bytes.
+
+
+'---------- Set the Initialization constants you want to read ------------------------------------------------
+'-------------------------------------------------------------------------------------------------------------
+c_p1_y				CON	1
+c_p2_y				CON	0	 
+c_p3_y				CON	0
+c_p4_y				CON	0	 
+
+c_p1_x				CON	1
+c_p2_x				CON	0	 
+c_p3_x				CON	0
+c_p4_x				CON	0	 
+
+c_p1_wheel			CON	0
+c_p2_wheel			CON	0	 
+c_p3_wheel			CON	0
+c_p4_wheel			CON	0	 
+
+c_p1_aux			CON	0	 
+c_p2_aux			CON	0	 
+c_p3_aux			CON	0	 
+c_p4_aux			CON	0	 
+
+c_oi_swA			CON	1
+c_oi_swB			CON	1
+
+c_sensor1			CON	1
+c_sensor2			CON	0
+c_sensor3			CON	0
+c_sensor4			CON	0
+c_sensor5			CON	0
+c_sensor6			CON	0
+c_sensor7			CON	0
+c_batt_volt			CON	0
+
+c_rc_swA			CON	1
+c_rc_swB			CON	1
+
+c_delta_t			CON	0
+c_PB_mode			CON	1
+c_packet_num			CON	0
+c_res01				CON	0
+
+
+'---------- Initialization Constant VOLTAGE - USER DEFINED ---------------------------------------------------
+'-------------------------------------------------------------------------------------------------------------
+'  This is the 'Low Battery' detect voltage.  The 'Low Battery' LED will
+'  blink when the voltage drops below this value.
+'  Basically, the value = ((DESIRED FLASH VOLTAGE * 16.46) - 8.35)
+'  Example, for a 6.5 Volt Flash trigger, set value = 99.
+
+dataInitVolt			CON 	140
+
+
+'=============================================================================================================
+'========== DEFINE CONSTANTS (DO NOT CHANGE) =================================================================
+'=============================================================================================================
+' Baud rate for communications with User CPU
+OUTBAUD				CON 	20	'(62500, 8N1, Noninverted)
+INBAUD				CON 	20	'(62500, 8N1, Noninverted)
+
+USERCPU				CON 	4
+FPIN				CON 	1
+COMA				CON 	1
+COMB				CON 	2
+COMC				CON 	3
+
+
+
+'---------- Input & Output Declarations ----------------------------------------------------------------------
+'-------------------------------------------------------------------------------------------------------------
+Output		COMB
+Input		COMA
+Input		COMC
+
+Output		7	'define Basic Run LED on RC => out7
+
+Output      	8	'define Robot Feedback LED => out8  => PWM1 Green
+Output      	9	'define Robot Feedback LED => out9  => PWM1 Red
+Output      	10	'define Robot Feedback LED => out10 => PWM2 Green
+Output      	11	'define Robot Feedback LED => out11 => PWM2 Red
+Output      	12	'define Robot Feedback LED => out12 => Relay1 Red
+Output      	13	'define Robot Feedback LED => out13 => Relay1 Green
+Output      	14	'define Robot Feedback LED => out14 => Relay2 Red
+Output      	15	'define Robot Feedback LED => out15 => Relay2 Green
+
+
+'---------- Initialize Inputs & Outputs ----------------------------------------------------------------------
+'-------------------------------------------------------------------------------------------------------------
+Out7  = 1		'Basic Run LED on RC
+Out8  = 0		'PWM1 LED - Green
+Out9  = 0		'PWM1 LED - Red
+Out10 = 0		'PWM2 LED - Green
+Out11 = 0		'PWM2 LED - Red
+Out12 = 0		'Relay1 LED - Red
+Out13 = 0		'Relay1 LED - Green
+Out14 = 0		'Relay2 LED - Red
+Out15 = 0		'Relay2 LED - Green
+
+
+'=============================================================================================================
+'========== PBASIC - MASTER uP INITIALIZATION ROUTINE ========================================================
+'=============================================================================================================
+'  DO NOT CHANGE THIS!  DO NOT MOVE THIS!
+'  The init routine sends 5 bytes to the Master uP, defining which data bytes to receive.
+'  1)  Collect init.
+'  2)  Lower the COMA line, which is the clk line for the shift out command.
+'  3)  Lower COMB line to tell pic that we are ready to send init data.
+'  4)  Wait for pic to lower the COMC line, signaling pic is ready for data.
+'  5)  Now send out init dat to pic, all 5 bytes.
+'  6)  Now set direction and levels for the COMA and COMB pins.
+
+tempA		CON	c_p3_x <<1 + c_p4_x <<1 + c_p1_x <<1 + c_p2_x <<1 + c_rc_swB
+dataInitA	CON	tempA <<1 + c_rc_swA <<1 + c_oi_swB <<1 + c_oi_swA
+tempB		CON	c_sensor4 <<1 + c_sensor3 <<1 + c_p1_y <<1 + c_p2_y <<1 + c_sensor2
+dataInitB	CON	tempB <<1 + c_sensor1 <<1 + c_packet_num <<1 + c_PB_mode
+tempC		CON	c_batt_volt <<1 + c_sensor7 <<1 + c_p1_wheel <<1 + c_p2_wheel <<1 + c_sensor6
+dataInitC	CON	tempC <<1 + c_sensor5 <<1 + c_p3_y <<1 + c_p4_y
+tempD		CON	c_res01 <<1 + c_delta_t <<1 + c_p3_aux <<1 + c_p4_aux <<1 + c_p1_aux
+dataInitD	CON	tempD <<1 + c_p2_aux  <<1 + c_p3_wheel <<1 + c_p4_wheel
+
+Output		COMA
+low		COMA
+low		COMB
+Input		COMC
+
+Wait_init:	if IN3 = 1 then Wait_init:
+Shiftout	COMB,COMA,1, [dataInitA,dataInitB,dataInitC,dataInitD,dataInitVolt]
+Input		COMA
+high		COMB
+
+Output		COMC
+low		COMC
+
+'ok... initialization done! lets roll!
+
+run 1
+

@@ -1,0 +1,24 @@
+ slot useage:
+	0 - initialization
+	1 - user mode
+	2 - joy 0/4
+	3 - joy 1/5
+	4 - joy 2
+	5 - joy 3
+
+
+scratch pad RAM entries
+	
+2 - left_hits		1
+3 - right_hits		2
+4 - last_left		3
+5 - last_right		4
+
+8 - suction_flags	1
+9 - auto_timer		1
+10 - auto_selection	3
+11 - auto_selection2	4
+13 - store_flags	2
+
+
+

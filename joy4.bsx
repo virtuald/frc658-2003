@@ -1,0 +1,547 @@
+' TEAM658 2003 Code - Main control program (slot 1) ... PBasic2.5
+'
+'(C)2003 Dustin Spicuzza, Team658
+'Portions (C)2002 Innovation First
+'
+' Automatic mode - Dead reckoning using a joystick
+'
+' {$PBASIC 2.5}
+' {$STAMP BS2SX}
+
+
+'========== DECLARE VARIABLES ================================================
+'=============================================================================
+'  Below is a list of declared input and output variables.  Comment or un-comment
+'  the variables as needed.  Declare any additional variables required in
+'  your main program loop.  Note that you may only use 26 total variables.
+
+
+'---------- Operator Interface (OI) - Analog Inputs --------------------------
+
+joy 		VAR word
+
+p1_x		VAR joy.byte0	'Port 1, X-axis on Joystick
+p1_y		VAR joy.byte1	'Port 1, Y-axis on Joystick
+
+
+'---------- Operator Interface - Digital Inputs ------------------------------
+
+oi_swA	VAR byte	'OI Digital Switch Inputs 1 thru 8
+oi_swB	VAR byte	'OI Digital Switch Inputs 9 thru 16
+
+
+'---------- Robot Controller (RC) - Analog Inputs ----------------------------
+
+sensor1	VAR byte	'RC Analog Input 1, connector pin 2
+
+'---------- Robot Controller - Digital Inputs --------------------------------
+
+rc_swA	VAR byte	'RC Digital Inputs 1 thru 8
+rc_swB	VAR byte	'RC Digital Inputs 9 thru 16
+
+
+'---------- Robot Controller - Digital Outputs -------------------------------
+
+relayA	VAR byte
+relayB	VAR byte
+
+
+'---------- Misc. ------------------------------------------------------------
+
+PB_mode	VAR byte
+'packet_num	VAR byte
+'delta_t	VAR byte
+
+
+'========== DEFINE ALIASES ===================================================
+'=============================================================================
+'  Aliases are variables which are sub-divisions of variables defined
+'  above.  Aliases don't require any additional RAM.
+
+
+'---------- Aliases for each OI switch input ---------------------------------
+'  Below are aliases for the digital inputs located on the Operator Interface.
+'  Ports 1 & 3 have their inputs duplicated in ports 4 & 2 respectively.  The 
+'  inputs from ports 1 & 3 may be disabled via the 'Disable' dip switch 
+'  located on the Operator Interface.  See Users Manual for details.
+
+p1_sw_trig	VAR oi_swA.bit0	'Joystick Trigger Button,	same as Port4 pin5 
+p1_sw_top	VAR oi_swA.bit1	'Joystick Top Button,		same as Port4 pin8
+p1_sw_aux1	VAR oi_swA.bit2	'Aux input,				same as Port4 pin9
+p1_sw_aux2	VAR oi_swA.bit3	'Aux input,				same as Port4 pin15
+
+p3_sw_trig	VAR oi_swA.bit4	'Joystick Trigger Button,	same as Port2 pin5 
+p3_sw_top	VAR oi_swA.bit5	'Joystick Top Button,		same as Port2 pin8
+p3_sw_aux1	VAR oi_swA.bit6	'Aux input,				same as Port2 pin9
+p3_sw_aux2	VAR oi_swA.bit7	'Aux input,				same as Port2 pin15
+
+p2_sw_trig	VAR oi_swB.bit0	'Joystick Trigger Button
+p2_sw_top	VAR oi_swB.bit1	'Joystick Top Button
+p2_sw_aux1	VAR oi_swB.bit2	'Aux input
+p2_sw_aux2	VAR oi_swB.bit3	'Aux input
+
+p4_sw_trig	VAR oi_swB.bit4	'Joystick Trigger Button
+p4_sw_top	VAR oi_swB.bit5	'Joystick Top Button
+p4_sw_aux1	VAR oi_swB.bit6	'Aux input
+p4_sw_aux2	VAR oi_swB.bit7	'Aux input
+
+
+'---------- Aliases for each RC switch input ---------------------------------
+'  Below are aliases for the digital inputs located on the Robot Controller.
+
+rc_sw1	VAR rc_swA.bit0
+rc_sw2	VAR rc_swA.bit1
+rc_sw3	VAR rc_swA.bit2
+rc_sw4	VAR rc_swA.bit3
+rc_sw5	VAR rc_swA.bit4
+rc_sw6	VAR rc_swA.bit5
+rc_sw7	VAR rc_swA.bit6
+rc_sw8	VAR rc_swA.bit7
+rc_sw9	VAR rc_swB.bit0
+rc_sw10	VAR rc_swB.bit1
+rc_sw11	VAR rc_swB.bit2
+rc_sw12	VAR rc_swB.bit3
+rc_sw13	VAR rc_swB.bit4
+rc_sw14	VAR rc_swB.bit5
+rc_sw15	VAR rc_swB.bit6
+rc_sw16	VAR rc_swB.bit7
+
+
+'---------- Aliases for each RC Relay outputs ---------------------------------
+'  Below are aliases for the relay outputs located on the Robot Controller.
+
+relay1_fwd	VAR RelayA.bit0
+relay1_rev	VAR RelayA.bit1
+relay2_fwd	VAR RelayA.bit2
+relay2_rev	VAR RelayA.bit3
+relay3_fwd	VAR RelayA.bit4
+relay3_rev	VAR RelayA.bit5
+relay4_fwd	VAR RelayA.bit6
+relay4_rev	VAR RelayA.bit7
+
+relay5_fwd	VAR RelayB.bit0
+relay5_rev	VAR RelayB.bit1
+relay6_fwd	VAR RelayB.bit2
+relay6_rev	VAR RelayB.bit3
+relay7_fwd	VAR RelayB.bit4
+
+relay7_rev	VAR RelayB.bit5
+relay8_fwd	VAR RelayB.bit6
+relay8_rev	VAR RelayB.bit7
+
+'*** temporary varibles
+	tempvar1	VAR byte
+	tempvar2	VAR byte
+	tempvar3	VAR byte
+	tempvar4	VAR byte
+
+	tween_time	VAR tempvar4
+
+
+'*** auto program selection
+	auto_selection 	VAR byte
+	auto_select	VAR auto_selection.nib0
+	auto_bit1	VAR auto_selection.bit0
+	auto_bit2	VAR auto_selection.bit1
+	auto_bit3	VAR auto_selection.bit2
+	auto_bit4	VAR auto_selection.bit3
+	auto_l_wing	VAR auto_selection.bit4
+	auto_r_wing	VAR auto_selection.bit5
+	auto_inverse	VAR auto_selection.bit6
+	
+	auto_selection2	VAR byte 
+	auto_delay	VAR auto_selection2.bit0
+	auto_delay2	VAR auto_selection2.bit1
+
+'*** system timer
+	timer		VAR byte
+
+'*** speed timer	
+	left_hits	VAR tempvar1 
+	right_hits	VAR tempvar2
+	last_left	VAR tempvar3
+	last_right	VAR tempvar4
+
+'*** recorder
+	record		VAR byte
+
+'*** auto timer
+	auto_timer	VAR tempvar1
+
+'*** misc. system flags
+	misc_flags	VAR byte
+	auto_mode 	VAR misc_flags.bit0
+	last_time	VAR misc_flags.bit1
+	no_user		VAR misc_flags.bit2
+	atimer_set	VAR misc_flags.bit3
+	time_set	VAR misc_flags.bit4
+
+	misc_flags2	VAR byte
+	spd_timer	VAR misc_flags2.nib0
+	last_left_spd	VAR misc_flags2.bit4
+	last_right_spd	VAR misc_flags2.bit5
+	wing_out	VAR misc_flags2.bit6
+
+' *** Our aliases for inputs..  
+'line tracking
+	right_line	VAR rc_sw1
+	left_line	VAR rc_sw2
+	center_line	VAR rc_sw3
+
+'timer clock pulse
+	timer_in	VAR rc_sw4
+
+'wings
+	right_out	VAR rc_sw5
+	right_in	VAR rc_sw6
+	left_out	VAR rc_sw7
+	left_in		VAR rc_sw8
+
+'suction cups
+	front_up	VAR rc_sw9
+	front_down	VAR rc_sw10
+	front_middle	VAR rc_sw11
+	rear_up		VAR rc_sw12
+	rear_down	VAR rc_sw13
+	rear_middle	VAR rc_sw14
+
+'speed indicators.. 
+	speed_right	VAR rc_sw15
+	speed_left	VAR rc_sw16
+
+'*** relays
+
+'wings
+	r_wing_out 	VAR relay3_fwd
+	r_wing_in	VAR relay3_rev
+	l_wing_out	VAR relay4_fwd
+	l_wing_in	VAR relay4_rev
+
+	wing_timer	VAR byte
+
+'*** motors	
+'drive motors... 
+	right_motor	VAR byte	
+	left_motor	VAR byte
+
+learn_button	VAR p4_sw_aux1	
+debug_button	VAR p3_sw_aux2
+
+'---------- Aliases for the Pbasic Mode Byte (PB_mode) -------------------------------------------------------
+'-------------------------------------------------------------------------------------------------------------
+'  Bit 7 of the PB_mode byte (aliased as comp_mode below) indicates the status
+'  of the Competition Control, either Enabled or Disabled.  This indicates the
+'  starting and stopping of rounds at the competitions.
+'  Comp_mode is indicated by a solid "Disabled" LED on the Operator Interface.
+'  Comp_mode = 1 for Enabled, 0 for Disabled.
+'
+'  Bit 6 of the PB_mode byte (aliased as auton_mode below) indicates the status
+'  of the Autonomous Mode, either Autonomous or Normal.  This indicates when
+'  the robot must run on its own programming.  When in Autonomous Mode, all
+'  OI analog inputs are set to 127 and all OI switch inputs are set to 0 (zero).
+'  Auton_mode is indicated by a blinking "Disabled" LED on the Operator Interface.
+'  Auton_mode = 1 for Autonomous, 0 for Normal.
+'
+'  Autonomous Mode can be turned ON by setting the RC to Team 0 (zero).
+'
+'  Bit 5 of the PB_mode byte (aliased as user_display_mode below) indicates when
+'  the user selects the "User Mode" on the OI.  PB_mode.bit5 is set to 1 in "User Mode".
+'  When the user selects channel, team number, or voltage, PB_mode.bit5 is set to 0
+'  When in "User Mode", the eight Robot Feedback LED are turned OFF.
+'  Note: "User Mode" is identified by the letter u in the left digit (for 4 digit OI's)
+'  Note: "User Mode" is identified by decimal places on the right two digits (for 3 digit OI's)
+
+comp_mode		VAR PB_mode.bit7
+auton_mode		VAR PB_mode.bit6
+user_display_mode	VAR PB_mode.bit5 
+
+
+p1_x = 127		'Port 1, X-axis on Joystick
+p1_y = 127		'Port 1, Y-axis on Joystick
+
+
+'flags
+	misc_flags = 0
+	misc_flags2 = 0
+
+
+'Motors
+	right_motor = 127
+	left_motor = 127
+
+'relays
+	relayA = 0
+	relayB = 0
+	
+'light must be on	
+	relay8_fwd = 1
+
+'timer
+	timer = 0
+	last_time = timer_in - 1
+	wing_timer = 0
+
+get 10, auto_selection
+get 11, auto_selection2
+
+'========== DEFINE CONSTANTS (DO NOT CHANGE) =================================
+'=============================================================================
+' Baud rate for communications with User CPU
+OUTBAUD	CON	20	' (62500, 8N1, Noninverted)
+INBAUD	CON	20	' (62500, 8N1, Noninverted)
+
+USERCPU	CON 4
+FPIN		CON 1
+COMA		CON 1
+COMB		CON 2
+COMC		CON 3
+
+
+'========== MAIN LOOP ========================================================
+'=============================================================================
+
+MainLoop:
+
+Serin COMA\COMB, INBAUD, [oi_swA,oi_swB,rc_swA,rc_swB,p1_x,PB_mode,sensor1,p1_y]
+
+Toggle 7	'Basic Run LED on the RC is toggled ON/OFF every loop
+
+	out12 = 1
+	out14 = 1
+	out15 = 1
+
+
+' Timer-related code.. increments the system timer. 
+' to reset timer.. set last_time = 0 and timer = 0
+
+	if timer_in <> last_time then
+		timer = timer + 1
+		last_time = timer_in
+		'debug CLS,"timer =",DEC timer
+		
+		wing_timer = wing_timer + 1
+	endif
+
+	
+
+'This code automatically determines whether to automatically run or manually control 
+
+'auto_period CON 136	'timer of automatic period.. 
+auto_period CON 150	'hopefully this works...
+
+
+'ok, detect if a) we can leave auto mode b) has operator taken controls yet?	
+
+' remember for transition back to user mode:
+'	a) store current gear state 
+'	b) run slot #1
+
+	if auton_mode = 0 AND timer >= auto_period then
+		run 1
+	endif
+
+	if learn_button = 0 then
+		if p1_x > 142 OR p1_x < 112 OR p1_y > 142 OR p1_y < 112 then
+			run 1
+		endif
+	endif
+
+	if auto_delay = 1 OR auto_delay2 = 1 then 
+		if auto_delay = 1 then
+			if timer = 15 then 
+				auto_delay = 0 
+				timer = 0
+			endif
+		else
+			if timer = 40 then
+				auto_delay2 = 0
+				timer = 0
+			endif
+		endif
+	else
+
+'do auto behaviors.. 
+  'wing_operations:
+	if wing_out = 1 then
+		if auto_r_wing = 1 then		'extend the right wing.. 
+			if right_out = 0 then 
+				r_wing_out = 1		
+				r_wing_in = 0
+			else				 
+				r_wing_out = 0		
+				r_wing_in = 0
+			endif
+		else
+			if right_in = 0 then		'or retract it.. doesn't matter
+				r_wing_out = 0
+				r_wing_in = 1		
+			else 
+				r_wing_out = 0
+				r_wing_in = 0		
+			endif
+		endif
+		if auto_l_wing = 1 then		'extend left wing
+			if left_out = 0 then
+				l_wing_out = 1		
+				l_wing_in = 0
+			else
+				l_wing_out = 0		
+				l_wing_in = 0
+			endif
+		else
+			if left_in = 0 then		'or we can retract it too.. 
+				l_wing_out = 0
+				l_wing_in = 1		
+			else 
+				l_wing_out = 0
+				l_wing_in = 0		
+			endif
+		endif
+	else
+		if wing_timer = 25 then 
+			wing_out = 1
+			wing_timer = 0
+		endif
+		
+		if left_in = 0 then		'or we can retract it too.. 
+			l_wing_out = 0
+			l_wing_in = 1		
+		else 
+			l_wing_out = 0
+			l_wing_in = 0		
+		endif
+		if right_in = 0 then		'or retract it.. doesn't matter
+			r_wing_out = 0
+			r_wing_in = 1		
+		else 
+			r_wing_out = 0
+			r_wing_in = 0		
+		endif
+
+
+	endif 
+
+	if learn_button = 0 then
+
+		if auto_select >= 4 then 
+			read (timer*2)+400, right_motor 
+			read (timer*2)+401, left_motor
+		else 
+			read (timer*2), right_motor 
+			read (timer*2)+1, left_motor
+		endif
+
+		if timer >= auto_period then 
+			right_motor = 127
+			left_motor = 127
+		endif
+
+		if debug_button = 1 then
+			if timer <> record then
+				debug DEC right_motor,",", DEC left_motor,","
+			endif
+			record = timer
+		endif				
+
+		if auto_inverse = 1 then
+			tempvar1 = right_motor
+			right_motor = left_motor
+			left_motor = tempvar1
+		endif
+
+	else
+
+	
+		divi 	CON	4 
+		mult	CON	6
+		oc_offset  CON 	7		
+
+		out12 = 0
+		out14 = 1
+		out15 = 0		
+
+		if (p1_x < 142 AND p1_x > 112) then 
+			p1_x = 127
+		else
+			if p1_x > 127 then 
+				p1_x = p1_x - 127		'convert to 0-127
+				p1_x = p1_x / divi		'down
+				if p1_x < oc_offset then
+					p1_x = 0
+				else	
+					p1_x = p1_x - oc_offset  		
+				endif
+				p1_x = p1_x * mult MAX 127	'up to 0-127
+				p1_x = p1_x + 127		'convert to 127-254
+			else
+				p1_x = 127 - p1_x 		'convert to a number 0-112
+				p1_x = p1_x / divi		'down 	
+				if p1_x < oc_offset then
+					p1_x = 0
+				else	
+					p1_x = p1_x - oc_offset  		
+				endif
+				p1_x = p1_x * mult MAX 127	'up to 0-127
+				p1_x = 127 - p1_x		'convert back to 127-0
+			endif
+		endif
+	
+		if (p1_y < 142 AND p1_y > 112) then 
+			p1_y = 127
+		else
+			if p1_y > 127 then 
+				p1_y = p1_y - 127		'convert to 0-127
+				p1_y = p1_y / divi		'down
+				if p1_y < oc_offset then
+					p1_y = 0
+				else	
+					p1_y = p1_y - oc_offset  		
+				endif
+				p1_y = p1_y * mult MAX 127	'up to 0-127
+				p1_y = p1_y + 127		'convert to 127-254
+			else
+				p1_y = 127 - p1_y 		'convert to a number 0-112
+				p1_y = p1_y / divi		'down 
+				if p1_y < oc_offset then
+					p1_y = 0
+				else	
+					p1_y = p1_y - oc_offset  		
+				endif
+				p1_y = p1_y * mult MAX 127	'up to 0-127
+				p1_y = 127 - p1_y		'convert back to 127-0
+			endif
+		endif
+
+
+		right_motor = (((2000 + p1_y + p1_x - 127) Min 2000 Max 2254) - 2000)		
+		left_motor = (((2000 + p1_y - p1_x + 127) Min 2000 Max 2254) - 2000)
+
+		if auto_select >= 4 then 
+			write (timer*2)+400, right_motor
+			write (timer*2)+401, left_motor
+		else
+			write (timer*2), right_motor
+			write (timer*2)+1, left_motor	
+		endif
+	endif
+
+	endif
+'========== OUTPUT DATA ======================================================
+'=============================================================================
+'  The Serout line sends data to the Output uP.  The Output uP passes this to each PWM 1-16
+'  and Relay 1-8.  The Output uP will not output data if there is no communication with the
+'  Operator Interface or if the Competition Mode is Disabled.  Do not delete any elements
+'  from the Serout array.  Set unused PWM outputs to 127.  Set unused relay outputs to 0.
+'
+'  Serout USERCPU, OUTBAUD, [255,255,(PWM1),relayA,(PWM2),relayB,(PWM3),(PWM4),(PWM5),(PWM6),(PWM7),(PWM8),(PWM9),(PWM10),(PWM11),(PWM12),(PWM13),(PWM14),(PWM15),(PWM16)]
+
+   Serout USERCPU, OUTBAUD, [255,255,right_motor,relayA,left_motor,relayB,127,127,127,127,127,127,127,127,127,127,127,127,127,127]
+
+Goto MainLoop: 
+
+
+Stop
+
+
+
+

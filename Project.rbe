@@ -1,0 +1,65 @@
+init.bsx
+user.bsx
+joy1.bsx
+joy2.bsx
+joy3.bsx
+joy4.bsx
+line.bsx
+dead.bsx
+Right Motor:
+Left Motor:
+Front Suction:
+Rear Suction:
+Gear Servo:
+Suction Valve:
+
+
+
+
+
+
+
+
+
+
+1:
+2:
+Right Wing:
+Left Wing:
+5:
+6:
+7:
+Light:
+PWM1 Fwd:
+PWM1 Rev:
+PWM2 Fwd:
+PWM2 Rev:
+Relay1 Rev:
+Relay1 Fwd:
+Relay2 Rev:
+Relay2 Fwd:
+Right Line
+Left Line
+Center Line
+Timer
+Right Out
+Right In
+Left Out
+Left In
+Front Up
+Front Down
+Front Middle
+Rear Up
+Rear Down
+Rear Middle
+Speed Right
+Speed Left
+Gyro:
+2:
+3:
+4:
+5:
+6:
+7:
+8:
+1
